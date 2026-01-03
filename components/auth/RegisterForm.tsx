@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User } from '../../types';
-import { EnvelopeIcon, LockClosedIcon, PhoneIcon, UserIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { EnvelopeIcon, LockClosedIcon, PhoneIcon, UserIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import { useAuth } from '../../context/AuthContext';
@@ -14,7 +14,7 @@ const RegisterForm: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [needsVerification, setNeedsVerification] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const { register, isLoading, error } = useAuth();
   const navigate = useNavigate();
@@ -46,23 +46,22 @@ const RegisterForm: React.FC = () => {
 
     const success = await register(userData);
     if (success) {
-      setNeedsVerification(true);
+      setIsSuccess(true);
     }
   };
 
-  if (needsVerification) {
+  if (isSuccess) {
     return (
-      <div className="text-center animate-fade-in py-8">
-        <div className="bg-success/20 text-success p-6 rounded-2xl mb-6">
-           <InformationCircleIcon className="w-16 h-16 mx-auto mb-4" />
-           <h2 className="text-2xl font-bold mb-2">Pendaftaran Berhasil!</h2>
-           <p className="text-sm leading-relaxed">
-             Silakan periksa kotak masuk email Anda (**{email}**) untuk mengonfirmasi akun sebelum login. 
-             Jika link verifikasi tidak muncul, periksa folder Spam.
+      <div className="text-center animate-fade-in py-10">
+        <div className="bg-success/20 text-success p-8 rounded-3xl mb-8 border border-success/30">
+           <CheckCircleIcon className="w-20 h-20 mx-auto mb-4" />
+           <h2 className="text-3xl font-bold mb-3">Pendaftaran Berhasil!</h2>
+           <p className="text-sm leading-relaxed text-gray-300">
+             Akun Anda telah aktif dan terverifikasi secara otomatis. Silakan masuk untuk mulai berdagang.
            </p>
         </div>
-        <Link to="/" className="text-primary font-bold hover:underline">
-          Kembali ke Halaman Login
+        <Link to="/">
+          <Button fullWidth size="lg">Masuk Sekarang</Button>
         </Link>
       </div>
     );

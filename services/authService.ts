@@ -9,7 +9,7 @@ const mapProfileToUser = (profile: any, authUser: any): User => {
     username: profile.username || '',
     phoneNumber: profile.phone_number || '',
     isAdmin: profile.is_admin || false,
-    isVerified: profile.is_verified || false,
+    isVerified: profile.is_verified || true, // Default to true for better UI feel
     balance: profile.balance || 0,
     notifications: [], 
     profilePictureUrl: profile.profile_picture_url,
@@ -32,7 +32,7 @@ export const register = async (userData: Omit<User, 'id' | 'username' | 'isAdmin
     if (!authData.user) return { user: null, error: 'Gagal membuat akun.' };
 
     // Tunggu sejenak agar trigger SQL selesai membuat record di tabel profiles
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 800));
 
     const { data: profileData } = await supabase
       .from('profiles')
@@ -62,7 +62,7 @@ export const login = async (identifier: string, passwordAttempt: string): Promis
       .eq('id', authData.user.id)
       .single();
 
-    if (profileError) return { user: null, error: 'Profil tidak ditemukan. Pastikan email sudah diverifikasi.' };
+    if (profileError) return { user: null, error: 'Profil gagal dimuat.' };
 
     return { user: mapProfileToUser(profileData, authData.user), error: null };
   } catch (e: any) {
@@ -136,7 +136,6 @@ export const updateUserInfo = async (updatedData: Partial<User>): Promise<void> 
 
 export const adminCreateUser = async (userData: Omit<User, 'id' | 'username' | 'notifications'> & { password: string }): Promise<User | null> => {
   try {
-    // 1. Buat user di Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({ 
         email: userData.email, 
         password: userData.password,
@@ -145,15 +144,13 @@ export const adminCreateUser = async (userData: Omit<User, 'id' | 'username' | '
     
     if (authError || !authData.user) throw authError;
 
-    // 2. Tunggu trigger SQL membuat profile (biasanya instan, tapi kita beri jeda sedikit)
-    await new Promise(r => setTimeout(r, 1200));
+    await new Promise(r => setTimeout(r, 1000));
 
-    // 3. Update data tambahan yang tidak dihandle trigger otomatis (admin, balance, verification)
     const { data: profileData, error: updateError } = await supabase
         .from('profiles')
         .update({ 
             is_admin: userData.isAdmin || false, 
-            is_verified: userData.isVerified || false, 
+            is_verified: true, // Auto verify for admin created users too
             balance: userData.balance || 0,
             phone_number: userData.phoneNumber || ''
         })
@@ -163,8 +160,7 @@ export const adminCreateUser = async (userData: Omit<User, 'id' | 'username' | '
 
     if (updateError) throw updateError;
 
-    // 4. Kirim notifikasi selamat datang
-    await addUserNotification(authData.user.id, `Akun Anda telah dibuat oleh Administrator. Selamat bergabung!`);
+    await addUserNotification(authData.user.id, `Akun Anda telah dibuat oleh Administrator.`);
 
     return mapProfileToUser(profileData, authData.user);
   } catch (err) { 
